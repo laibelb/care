@@ -1,0 +1,48 @@
+.documents-container {
+  width: 100%;
+}
+
+.documents-header {
+  margin-bottom: 1.5rem;
+}
+
+.documents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 20px;
+}
+
+.document-card {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.document-card:hover {
+  box-shadow: var(--shadow);
+  transform: translateY(-2px);
+}
+
+.document-icon {
+  width: 48px;
+  height: 48px;
+  margin-bottom: 1rem;
+}
+
+.document-name {
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.document-info {
+  color: var(--gray-600);
+  font-size: 0.875rem;
+}
+
+.document-folder {
+  background-color: var(--gray-100);
+}

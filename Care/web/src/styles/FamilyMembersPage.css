@@ -1,0 +1,52 @@
+.family-container {
+  width: 100%;
+}
+
+.family-header {
+  margin-bottom: 1.5rem;
+}
+
+.family-members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.family-member-card {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.2s;
+}
+
+.family-member-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.family-member-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-bottom: 1rem;
+  object-fit: cover;
+}
+
+.family-member-name {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.family-member-role {
+  color: var(--gray-600);
+  margin-bottom: 1rem;
+}
+
+.family-filters {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

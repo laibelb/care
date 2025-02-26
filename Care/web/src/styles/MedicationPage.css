@@ -1,0 +1,93 @@
+.medication-page {
+  width: 100%;
+}
+
+.filter-controls {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.filter-controls button {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  color: var(--gray-700);
+  padding: 8px 15px;
+  margin-right: 10px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+}
+
+.filter-controls button.active {
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--white);
+}
+
+.medications-list {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  margin-bottom: 30px;
+  overflow-x: auto;
+}
+
+.medications-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 800px;
+}
+
+.medications-table th, .medications-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid var(--gray-300);
+}
+
+.medications-table th {
+  background-color: var(--gray-100);
+  font-weight: 600;
+}
+
+.no-medications {
+  padding: 30px;
+  text-align: center;
+  color: var(--gray-600);
+  font-style: italic;
+}
+
+.add-medication-section {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.save-btn, .cancel-btn {
+  padding: 10px 20px;
+  margin-right: 10px;
+  border-radius: var(--border-radius);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.save-btn {
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+}
+
+.save-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.cancel-btn {
+  background-color: var(--gray-200);
+  border: 1px solid var(--gray-300);
+  color: var(--gray-700);
+}
+
+.form-actions {
+  display: flex;
+  margin-top: 20px;
+}

@@ -1,0 +1,73 @@
+.contacts-container {
+  width: 100%;
+}
+
+.contacts-header {
+  margin-bottom: 1.5rem;
+}
+
+.contacts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.contact-card {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  transition: all 0.2s;
+}
+
+.contact-card:hover {
+  box-shadow: var(--shadow);
+}
+
+.contact-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.contact-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: var(--primary-light);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 1rem;
+}
+
+.contact-name {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.contact-specialty {
+  color: var(--gray-600);
+}
+
+.contact-info {
+  margin-top: 1rem;
+}
+
+.contact-info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.contact-info-icon {
+  margin-right: 0.75rem;
+  color: var(--gray-600);
+}
+
+.contacts-filters {
+  margin-bottom: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}

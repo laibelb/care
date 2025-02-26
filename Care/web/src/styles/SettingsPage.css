@@ -1,0 +1,32 @@
+.settings-container {
+  width: 100%;
+}
+
+.settings-section {
+  margin-bottom: 2rem;
+}
+
+.settings-header {
+  margin-bottom: 1.5rem;
+}
+
+.settings-form-group {
+  margin-bottom: 1.5rem;
+}
+
+.settings-label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+}
+
+.settings-tabs {
+  margin-bottom: 2rem;
+}

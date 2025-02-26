@@ -1,0 +1,104 @@
+.health-tracking-page {
+  width: 100%;
+}
+
+.add-event-section {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+  margin-bottom: 30px;
+}
+
+.vitals-form {
+  background-color: var(--gray-100);
+  border-radius: var(--border-radius);
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.add-event-btn {
+  background-color: var(--primary);
+  color: var(--white);
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.add-event-btn:hover {
+  background-color: var(--primary-dark);
+}
+
+.event-history {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  padding: 20px;
+}
+
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.event-card {
+  border: 1px solid var(--gray-300);
+  border-radius: var(--border-radius);
+  padding: 15px;
+}
+
+.event-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gray-300);
+  margin-bottom: 10px;
+}
+
+.event-type {
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.event-date {
+  color: var(--gray-600);
+  font-size: 0.9rem;
+}
+
+.event-content {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 15px;
+}
+
+.event-vitals h4, .event-notes h4 {
+  margin-bottom: 10px;
+  font-size: 1rem;
+  color: var(--gray-700);
+}
+
+.vitals-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.vital-item {
+  font-size: 0.9rem;
+}
+
+.vital-label {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+@media (max-width: 768px) {
+  .event-content {
+    grid-template-columns: 1fr;
+  }
+}
