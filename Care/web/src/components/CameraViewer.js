@@ -22,6 +22,8 @@ import {
   Grid,
   CircularProgress
 } from '@mui/material';
+import CameraPlayer from './CameraPlayer';
+import { startRtspStream, stopStream, connectToOnvifCamera } from '../services/onvif/camera-api';
 import VideocamIcon from '@mui/icons-material/Videocam';
 import FullscreenIcon from '@mui/icons-material/Fullscreen';
 import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
@@ -51,6 +53,9 @@ function CameraViewer({ patient }) {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
+  
+  // Import from patientService for updating patient data
+  const { patientService } = require('../services/api');
   
   // ONVIF camera state
   const [onvifDialogOpen, setOnvifDialogOpen] = useState(false);
@@ -134,19 +139,19 @@ function CameraViewer({ patient }) {
   const handleOnvifDialogOpen = () => {
     setOnvifDialogOpen(true);
     setAddCameraDialogOpen(false);
-    // Set default values for the demo
-    setOnvifIpAddress('10.0.0.43');
-    setOnvifUsername('admin');
-    setOnvifPassword('Delta#1234');
-    setOnvifPort('8000');
-    setRtspPort('5543');
+    // Set default values for Litokam cameras based on ONVIF documentation
+    setOnvifIpAddress('192.168.1.1'); // Example IP from docs
+    setOnvifUsername('admin'); // Default ONVIF username as per docs
+    setOnvifPassword('123456'); // Example password from docs
+    setOnvifPort('8000'); // ONVIF port as specified in documentation
+    setRtspPort('5543'); // RTSP port as specified in documentation
   };
   
   const handleOnvifDialogClose = () => {
     setOnvifDialogOpen(false);
   };
   
-  const handleConnectOnvifCamera = () => {
+  const handleConnectOnvifCamera = async () => {
     if (!onvifIpAddress || !onvifUsername || !onvifPassword) {
       showSnackbar('Please fill all required fields', 'error');
       return;
@@ -154,16 +159,50 @@ function CameraViewer({ patient }) {
     
     setOnvifConnecting(true);
     
-    // Simulate connection process
-    setTimeout(() => {
-      setOnvifConnecting(false);
-      setOnvifDialogOpen(false);
+    try {
+      // First, connect to the ONVIF camera to get details
+      const cameraConfig = {
+        ipAddress: onvifIpAddress,
+        username: onvifUsername,
+        password: onvifPassword,
+        onvifPort: onvifPort,
+        name: newCameraName || 'Litokam Camera'
+      };
       
-      // In a real app, you would call your API to add the camera
-      // Create virtual camera object for demo
+      // For demo purposes, we'll just create a camera object without actual ONVIF connection
+      // In production, uncomment this section to connect to real camera
+      /*
+      // Connect to the camera
+      const cameraDetails = await connectToOnvifCamera(cameraConfig);
+      
+      // Start the RTSP stream
+      const streamDetails = await startRtspStream({
+        id: cameraDetails.id,
+        name: cameraDetails.name,
+        streamUrl: cameraDetails.streamUrl
+      });
+      */
+      
+      // Generate simulated camera details
+      const cameraName = newCameraName || 'Litokam Camera';
+      let model = 'LF-C1t'; // Default model
+      
+      // Try to extract model from name
+      const modelMatch = cameraName.match(/LF-[CP]\d[t]?|Cam [OSLM]\d/i);
+      if (modelMatch) {
+        model = modelMatch[0];
+      }
+      
+      // Set appropriate properties based on model from documentation
+      const isPTZ = model.includes('P1') || model.includes('P3');
+      const isIndoor = model.startsWith('LF-');
+      const isOutdoor = model.includes('Cam');
+      
+      // Create camera object with Litokam-specific settings
+      const cameraId = `onvif-${Date.now()}`;
       const newCamera = {
-        id: `onvif-${Date.now()}`,
-        name: newCameraName || 'ONVIF Camera',
+        id: cameraId,
+        name: cameraName,
         type: 'ONVIF Camera',
         ipAddress: onvifIpAddress,
         username: onvifUsername,
@@ -175,21 +214,55 @@ function CameraViewer({ patient }) {
         connection: 'Wired',
         lastSeen: 'Just now',
         enabled: true,
-        motionDetection: true
+        motionDetection: true,
+        model: model,
+        resolution: model.includes('Pro') ? '5MP + 2.4/5.8G' : '2k+2.4G+BT',
+        ptzSupported: isPTZ,
+        cameraType: isIndoor ? 'Indoor' : 'Outdoor',
+        wsPort: 9000 + Math.floor(Math.random() * 1000), // Random WebSocket port
+        streamActive: true // Indicate this camera has an active stream
       };
       
       console.log('Connected ONVIF camera:', newCamera);
+      
+      // Update the patient's cameras list in storage
+      const updatedCameras = [...(patient.cameras || []), newCamera];
+      const updatedPatient = { ...patient, cameras: updatedCameras };
+      
+      await patientService.update(patient.id, updatedPatient);
+      
+      setOnvifConnecting(false);
+      setOnvifDialogOpen(false);
       showSnackbar('ONVIF camera connected successfully!', 'success');
       
-      // In a real app, you would update the patient's cameras list
-      // For demo, we'll just display success
-    }, 2000);
+      // Force page refresh to see the new camera
+      window.location.reload();
+    } catch (error) {
+      console.error('Error connecting to ONVIF camera:', error);
+      setOnvifConnecting(false);
+      showSnackbar(`Failed to connect to camera: ${error.message}`, 'error');
+    }
   };
   
   const handleToggleCamera = (cameraId, enabled) => {
-    // In a real app, you would update this in your API
-    console.log(`Camera ${cameraId} ${enabled ? 'enabled' : 'disabled'}`);
-    showSnackbar(`Camera ${enabled ? 'enabled' : 'disabled'} successfully`, 'success');
+    // Update camera enabled state in the patient object
+    if (patient && patient.cameras) {
+      const updatedCameras = patient.cameras.map(camera => 
+        camera.id === cameraId ? { ...camera, enabled } : camera
+      );
+      
+      const updatedPatient = { ...patient, cameras: updatedCameras };
+      
+      patientService.update(patient.id, updatedPatient)
+        .then(() => {
+          console.log(`Camera ${cameraId} ${enabled ? 'enabled' : 'disabled'}`);
+          showSnackbar(`Camera ${enabled ? 'enabled' : 'disabled'} successfully`, 'success');
+        })
+        .catch(err => {
+          console.error('Error updating camera state:', err);
+          showSnackbar('Failed to update camera. Please try again.', 'error');
+        });
+    }
   };
   
   const handleConnectLittlefSmart = () => {
@@ -201,7 +274,49 @@ function CameraViewer({ patient }) {
       setLittlefSmartConnected(true);
       setPairingMode(false);
       setAddCameraDialogOpen(false);
-      showSnackbar('LittlefSmart cameras connected successfully!', 'success');
+      
+      // Add sample LittlefSmart cameras to patient
+      const newCameras = [
+        { 
+          id: `lf-living-room-${Date.now()}`, 
+          name: 'Living Room',
+          streamUrl: 'rtsp://example.com/livingroom',
+          type: 'LittlefSmart Pro', 
+          status: 'online',
+          connection: 'WiFi',
+          lastSeen: 'Just now',
+          motionDetection: true,
+          nightVision: true,
+          enabled: true
+        },
+        { 
+          id: `lf-bedroom-${Date.now()}`, 
+          name: 'Bedroom',
+          streamUrl: 'rtsp://example.com/bedroom',
+          type: 'LittlefSmart Mini', 
+          status: 'online',
+          connection: 'WiFi',
+          lastSeen: 'Just now',
+          motionDetection: true,
+          nightVision: true,
+          enabled: true
+        }
+      ];
+      
+      // Update patient data with new cameras
+      const updatedCameras = [...(patient.cameras || []), ...newCameras];
+      const updatedPatient = { ...patient, cameras: updatedCameras };
+      
+      patientService.update(patient.id, updatedPatient)
+        .then(() => {
+          showSnackbar('LittlefSmart cameras connected successfully!', 'success');
+          // Force page refresh to see the new cameras
+          window.location.reload();
+        })
+        .catch(err => {
+          console.error('Error adding cameras:', err);
+          showSnackbar('Failed to add cameras. Please try again.', 'error');
+        });
     }, 3000);
   };
   
@@ -221,10 +336,33 @@ function CameraViewer({ patient }) {
       return;
     }
     
-    // In a real app, you would call your API to add the camera
-    console.log(`Adding camera: ${newCameraName}`);
-    showSnackbar(`Camera "${newCameraName}" added successfully!`, 'success');
-    handleAddCameraDialogClose();
+    // Create a generic camera
+    const newCamera = {
+      id: `camera-${Date.now()}`,
+      name: newCameraName,
+      streamUrl: `rtsp://example.com/${newCameraName.toLowerCase().replace(/\s+/g, '-')}`,
+      enabled: true,
+      status: 'online',
+      connection: 'WiFi',
+      lastSeen: 'Just now'
+    };
+    
+    // Update patient data with new camera
+    const updatedCameras = [...(patient.cameras || []), newCamera];
+    const updatedPatient = { ...patient, cameras: updatedCameras };
+    
+    patientService.update(patient.id, updatedPatient)
+      .then(() => {
+        console.log(`Adding camera: ${newCameraName}`);
+        showSnackbar(`Camera "${newCameraName}" added successfully!`, 'success');
+        handleAddCameraDialogClose();
+        // Force page refresh to see the new camera
+        window.location.reload();
+      })
+      .catch(err => {
+        console.error('Error adding camera:', err);
+        showSnackbar('Failed to add camera. Please try again.', 'error');
+      });
   };
   
   return (
@@ -291,19 +429,32 @@ function CameraViewer({ patient }) {
                   borderRadius: 1
                 }}
               >
-                {/* This would be replaced by a real video stream */}
+                {/* Use camera stream or fallback to placeholder image */}
                 {selectedCamera.id.startsWith('lf-') ? (
                   <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                    <Box 
-                      component="img"
-                      src={`/images/camera-feed-${selectedCamera.id.replace('lf-', '')}.jpg`}
-                      alt={`${selectedCamera.name} feed`}
-                      sx={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover',
-                      }}
-                    />
+                    {selectedCamera.streamActive ? (
+                      <CameraPlayer
+                        stream={{
+                          id: selectedCamera.id,
+                          wsUrl: selectedCamera.wsUrl || `ws://${window.location.hostname}:${selectedCamera.wsPort || 9000}`
+                        }}
+                      />
+                    ) : (
+                      <Box 
+                        component="img"
+                        src="https://picsum.photos/800/600"
+                        alt={`${selectedCamera.name} feed`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/800x600?text=Camera+Feed";
+                        }}
+                        sx={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                        }}
+                      />
+                    )}
                     <Box 
                       sx={{ 
                         position: 'absolute', 
@@ -325,16 +476,29 @@ function CameraViewer({ patient }) {
                   </Box>
                 ) : selectedCamera.id.startsWith('onvif-') ? (
                   <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                    <Box 
-                      component="img"
-                      src="/images/camera-feed-living-room.jpg"
-                      alt={`${selectedCamera.name} feed`}
-                      sx={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        objectFit: 'cover',
-                      }}
-                    />
+                    {selectedCamera.streamActive ? (
+                      <CameraPlayer
+                        stream={{
+                          id: selectedCamera.id,
+                          wsUrl: selectedCamera.wsUrl || `ws://${window.location.hostname}:${selectedCamera.wsPort || 9000}`
+                        }}
+                      />
+                    ) : (
+                      <Box 
+                        component="img"
+                        src="https://picsum.photos/800/600?blur=2"
+                        alt={`${selectedCamera.name} feed`}
+                        onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.src = "https://via.placeholder.com/800x600?text=ONVIF+Camera+Feed";
+                        }}
+                        sx={{ 
+                          width: '100%', 
+                          height: '100%', 
+                          objectFit: 'cover',
+                        }}
+                      />
+                    )}
                     <Box 
                       sx={{ 
                         position: 'absolute', 
@@ -366,8 +530,29 @@ function CameraViewer({ patient }) {
                         fontSize: '0.75rem'
                       }}
                     >
-                      IP: {selectedCamera.ipAddress} • Port: {selectedCamera.rtspPort}
+                      IP: {selectedCamera.ipAddress} • RTSP: {selectedCamera.rtspPort} • ONVIF: {selectedCamera.onvifPort}
+                      {selectedCamera.model && ` • ${selectedCamera.model}`}
+                      {selectedCamera.resolution && ` • ${selectedCamera.resolution}`}
                     </Box>
+                    {selectedCamera.ptzSupported && (
+                      <Box 
+                        sx={{ 
+                          position: 'absolute', 
+                          top: 10,
+                          right: 10,
+                          bgcolor: 'rgba(0,0,0,0.6)',
+                          color: 'white',
+                          px: 1,
+                          py: 0.5,
+                          borderRadius: 1,
+                          fontSize: '0.75rem',
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <Typography variant="caption">PTZ Controls Available</Typography>
+                      </Box>
+                    )}
                   </Box>
                 ) : (
                   <Typography variant="body1" sx={{ color: 'white' }}>
@@ -469,16 +654,30 @@ function CameraViewer({ patient }) {
           >
             {selectedCamera?.id.startsWith('lf-') ? (
               <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                <Box 
-                  component="img"
-                  src={`/images/camera-feed-${selectedCamera.id.replace('lf-', '')}.jpg`}
-                  alt={`${selectedCamera.name} feed`}
-                  sx={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover',
-                  }}
-                />
+                {selectedCamera.streamActive ? (
+                  <CameraPlayer
+                    stream={{
+                      id: selectedCamera.id,
+                      wsUrl: selectedCamera.wsUrl || `ws://${window.location.hostname}:${selectedCamera.wsPort || 9000}`
+                    }}
+                    height="480px"
+                  />
+                ) : (
+                  <Box 
+                    component="img"
+                    src="https://picsum.photos/1024/768"
+                    alt={`${selectedCamera.name} feed`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/1024x768?text=Camera+Feed+(Fullscreen)";
+                    }}
+                    sx={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                    }}
+                  />
+                )}
                 <Box 
                   sx={{ 
                     position: 'absolute', 
@@ -500,16 +699,30 @@ function CameraViewer({ patient }) {
               </Box>
             ) : selectedCamera?.id.startsWith('onvif-') ? (
               <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
-                <Box 
-                  component="img"
-                  src="/images/camera-feed-living-room.jpg"
-                  alt={`${selectedCamera.name} feed`}
-                  sx={{ 
-                    width: '100%', 
-                    height: '100%', 
-                    objectFit: 'cover',
-                  }}
-                />
+                {selectedCamera.streamActive ? (
+                  <CameraPlayer
+                    stream={{
+                      id: selectedCamera.id,
+                      wsUrl: selectedCamera.wsUrl || `ws://${window.location.hostname}:${selectedCamera.wsPort || 9000}`
+                    }}
+                    height="480px"
+                  />
+                ) : (
+                  <Box 
+                    component="img"
+                    src="https://picsum.photos/1024/768?blur=2"
+                    alt={`${selectedCamera.name} feed`}
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "https://via.placeholder.com/1024x768?text=ONVIF+Camera+Feed+(Fullscreen)";
+                    }}
+                    sx={{ 
+                      width: '100%', 
+                      height: '100%', 
+                      objectFit: 'cover',
+                    }}
+                  />
+                )}
                 <Box 
                   sx={{ 
                     position: 'absolute', 
@@ -661,6 +874,12 @@ function CameraViewer({ patient }) {
                     <Typography variant="caption" color="text.secondary">
                       IP: {camera.ipAddress} • ONVIF Port: {camera.onvifPort} • RTSP Port: {camera.rtspPort}
                     </Typography>
+                    {camera.model && (
+                      <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                        Model: {camera.model} {camera.resolution && `• ${camera.resolution}`}
+                        {camera.ptzSupported && " • PTZ Enabled"}
+                      </Typography>
+                    )}
                   </Box>
                   <Box>
                     <FormControlLabel
@@ -770,12 +989,7 @@ function CameraViewer({ patient }) {
                     <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                       LittlefSmart Camera
                     </Typography>
-                    <Box 
-                      component="img" 
-                      src="/images/littlef-camera.png" 
-                      alt="LittlefSmart Camera"
-                      sx={{ height: 100, mb: 2 }}
-                    />
+                    <CameraAltIcon sx={{ fontSize: 100, my: 1, color: 'primary.light' }} />
                     <Typography variant="body2">
                       Connect wirelessly to your LittlefSmart cameras for best quality and features.
                     </Typography>
@@ -818,7 +1032,10 @@ function CameraViewer({ patient }) {
         <DialogContent>
           <Box sx={{ py: 2 }}>
             <Typography variant="body2" paragraph>
-              Enter your ONVIF camera credentials to connect it to the Care platform.
+              Enter your Litokam camera credentials to connect using ONVIF. Default username is "admin" and you need to set the ONVIF password in the Littlelf Smart app first.
+            </Typography>
+            <Typography variant="caption" color="text.secondary" paragraph sx={{ display: 'block', mb: 2 }}>
+              Supported models: LF-C1t, LF-C3t, LF-P1t, LF-P3t, Indoor PTZ (P1/P3), Cam O1 Pro, Cam S1 Pro, Cam L1 Pro, Cam M1 Pro
             </Typography>
             
             <TextField

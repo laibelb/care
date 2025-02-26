@@ -1,17 +1,8 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import Dashboard from './pages/Dashboard';
-import SchedulePage from './pages/SchedulePage';
-import MedicationPage from './pages/MedicationPage';
-import HealthTrackingPage from './pages/HealthTrackingPage';
-import ProfilePage from './pages/ProfilePage';
-import SettingsPage from './pages/SettingsPage';
-import DocumentsPage from './pages/DocumentsPage';
-import FamilyMembersPage from './pages/FamilyMembersPage';
-import MedicalContactsPage from './pages/MedicalContactsPage';
+import App from './App';
 import './styles/global.css';
 
 // Create a custom theme
@@ -125,19 +116,7 @@ root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/schedule" element={<SchedulePage />} />
-          <Route path="/medications" element={<MedicationPage />} />
-          <Route path="/health" element={<HealthTrackingPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/documents" element={<DocumentsPage />} />
-          <Route path="/family" element={<FamilyMembersPage />} />
-          <Route path="/contacts" element={<MedicalContactsPage />} />
-        </Routes>
-      </Router>
+      <App />
     </ThemeProvider>
   </React.StrictMode>
 );

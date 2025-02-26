@@ -6,7 +6,13 @@
     "body-parser": "^1.20.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "fluent-ffmpeg": "^2.1.2",
+    "node-onvif": "^0.1.7",
+    "node-rtsp-stream": "^0.0.9",
+    "socket.io": "^4.8.1",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
   },
   "scripts": {
     "start": "node src/index.js",

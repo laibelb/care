@@ -1,17 +1,46 @@
 class CareRecipient {
-  constructor(id, name, dob, medicalConditions, allergies, notes) {
+  constructor(id, name, dob, medicalConditions, allergies, notes, primaryPhoto, preferredName) {
     this.id = id;
     this.name = name;
+    this.preferredName = preferredName || name;
     this.dob = dob;
     this.medicalConditions = medicalConditions || [];
     this.allergies = allergies || [];
     this.notes = notes;
+    this.primaryPhoto = primaryPhoto;
+  }
+}
+
+class CareRecipientProfile {
+  constructor(careRecipientId, medicalID, primaryPhysician, address, emergencyContacts, preferredHospital, dialysisSchedule, dialysisCenter, bloodType) {
+    this.careRecipientId = careRecipientId;
+    this.medicalID = medicalID;
+    this.primaryPhysician = primaryPhysician;
+    this.address = address;
+    this.emergencyContacts = emergencyContacts || [];
+    this.preferredHospital = preferredHospital;
+    this.dialysisSchedule = dialysisSchedule;
+    this.dialysisCenter = dialysisCenter;
+    this.bloodType = bloodType;
+  }
+}
+
+class CareRecipientAccess {
+  constructor(id, careRecipientId, userId, accessLevel, relationshipToPatient, dateGranted, status) {
+    this.id = id;
+    this.careRecipientId = careRecipientId;
+    this.userId = userId;
+    this.accessLevel = accessLevel; // 'admin', 'caregiver', 'readonly'
+    this.relationshipToPatient = relationshipToPatient;
+    this.dateGranted = dateGranted || new Date().toISOString();
+    this.status = status || 'active'; // 'active', 'pending', 'revoked'
   }
 }
 
 class Medication {
-  constructor(id, name, dosage, frequency, startDate, endDate, notes, prescribedBy) {
+  constructor(id, careRecipientId, name, dosage, frequency, startDate, endDate, notes, prescribedBy) {
     this.id = id;
+    this.careRecipientId = careRecipientId;
     this.name = name;
     this.dosage = dosage;
     this.frequency = frequency;
@@ -48,4 +77,4 @@ class Visit {
   }
 }
 
-export { CareRecipient, Medication, HealthEvent, Visit };
+export { CareRecipient, CareRecipientProfile, CareRecipientAccess, Medication, HealthEvent, Visit };

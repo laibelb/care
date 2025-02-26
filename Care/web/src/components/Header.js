@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import '../styles/Header.css';
 
@@ -19,6 +19,7 @@ import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import ListItemAvatar from '@mui/material/ListItemAvatar';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 
@@ -35,7 +36,10 @@ import LogoutIcon from '@mui/icons-material/Logout';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 
-function Header({ user = { name: 'Ari Berkowitz', role: 'admin', photoUrl: 'https://randomuser.me/api/portraits/men/64.jpg' }, onLogout }) {
+function Header({ 
+  user = { name: 'Ari Berkowitz', role: 'admin', photoUrl: '/images/ariB.png' }, 
+  onLogout
+}) {
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -101,32 +105,6 @@ function Header({ user = { name: 'Ari Berkowitz', role: 'admin', photoUrl: 'http
         <Typography variant="subtitle2" sx={{ mb: 1 }}>
           Family Eldercare Coordinator
         </Typography>
-      </Box>
-      
-      <Divider />
-      
-      <Box sx={{ p: 2, pt: 1, pb: 1 }}>
-        <Typography variant="subtitle2" color="text.secondary">
-          PATIENT
-        </Typography>
-      </Box>
-      
-      <Box sx={{ display: 'flex', alignItems: 'center', px: 2, pb: 2 }}>
-        <Avatar
-          alt="Rabbi Berkowitz"
-          src="/images/rabbiB.png"
-          sx={{ width: 56, height: 56, mr: 2 }}
-        />
-        <Box>
-          <Typography variant="body1" fontWeight="medium">Rabbi Berkowitz</Typography>
-          <Chip 
-            label="Dialysis Patient" 
-            size="small" 
-            color="primary" 
-            variant="outlined" 
-            sx={{ mt: 0.5 }}
-          />
-        </Box>
       </Box>
       
       <Divider />

@@ -149,7 +149,7 @@ function Dashboard() {
               id: '3', 
               caregiverId: '9',
               caregiverName: 'Ari Berkowitz',
-              caregiverPhoto: 'https://randomuser.me/api/portraits/men/64.jpg',
+              caregiverPhoto: '/images/ariB.png',
               date: '2025-02-27T18:00:00',
               endTime: '2025-02-27T20:00:00',
               type: 'Family Visit',

@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../styles/FamilyMembersPage.css';
+import { useAppContext } from '../context/AppContext';
 import {
   Container,
   Typography,
@@ -34,7 +35,8 @@ import {
   Alert,
   Snackbar,
   Tooltip,
-  Badge
+  Badge,
+  Input
 } from '@mui/material';
 import Header from '../components/Header';
 import AddIcon from '@mui/icons-material/Add';
@@ -48,6 +50,7 @@ import HomeIcon from '@mui/icons-material/Home';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HealthAndSafetyIcon from '@mui/icons-material/HealthAndSafety';
 import AssignmentIcon from '@mui/icons-material/Assignment';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import EventIcon from '@mui/icons-material/Event';
 import PersonIcon from '@mui/icons-material/Person';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -57,6 +60,8 @@ import LocationOnIcon from '@mui/icons-material/LocationOn';
 import VerifiedUserIcon from '@mui/icons-material/VerifiedUser';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera';
+import MedicalInformationIcon from '@mui/icons-material/MedicalInformation';
 import { styled } from '@mui/material/styles';
 
 // Styled Badge component for verified members
@@ -78,16 +83,32 @@ const VerifiedBadge = styled(Badge)(({ theme }) => ({
 }));
 
 function FamilyMembersPage() {
-  // State variables
+  // Get context data
+  const { 
+    familyMembers, 
+    patients,
+    addFamilyMember, 
+    updateFamilyMember, 
+    deleteFamilyMember,
+    convertFamilyMemberToPatient,
+    getPatientsNotFamilyMembers
+  } = useAppContext();
+
+  // Local state variables
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterRole, setFilterRole] = useState('all');
   const [menuAnchorEl, setMenuAnchorEl] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState(null);
   const [openAddMemberDialog, setOpenAddMemberDialog] = useState(false);
+  const [openAddPatientAsMemberDialog, setOpenAddPatientAsMemberDialog] = useState(false);
+  const [openMakePatientDialog, setOpenMakePatientDialog] = useState(false);
   const [openEditMemberDialog, setOpenEditMemberDialog] = useState(false);
   const [openDeleteConfirmDialog, setOpenDeleteConfirmDialog] = useState(false);
   const [openViewTasksDialog, setOpenViewTasksDialog] = useState(false);
+  const [formattedFamilyMembers, setFormattedFamilyMembers] = useState([]);
+  const [patientsNotMembers, setPatientsNotMembers] = useState([]);
   const [memberForm, setMemberForm] = useState({
     firstName: '',
     lastName: '',
@@ -96,97 +117,53 @@ function FamilyMembersPage() {
     address: '',
     role: '',
     relationship: '',
-    notes: ''
+    notes: '',
+    medicalConditions: ''
   });
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success');
 
-  // Mock family member data
-  const [familyMembers, setFamilyMembers] = useState([
-    { 
-      id: 1, 
-      firstName: 'Sarah', 
-      lastName: 'Berkowitz', 
-      relationship: 'Daughter',
-      email: 'sarah.b@example.com', 
-      phone: '(555) 234-5678', 
-      address: '456 Oak St, Chicago, IL 60601',
-      role: 'caregiver',
-      tasks: [
-        { id: 1, title: 'Schedule doctor appointment', dueDate: '2025-03-05', status: 'pending' },
-        { id: 2, title: 'Pick up medication', dueDate: '2025-02-28', status: 'completed' },
-      ],
-      notifications: true,
-      lastActive: '1 hour ago',
-      verified: true,
-      img: 'https://randomuser.me/api/portraits/women/32.jpg'
-    },
-    { 
-      id: 2, 
-      firstName: 'David', 
-      lastName: 'Berkowitz', 
-      relationship: 'Son',
-      email: 'david.b@example.com', 
-      phone: '(555) 345-6789', 
-      address: '789 Pine St, New York, NY 10001',
-      role: 'family',
-      tasks: [
-        { id: 3, title: 'Weekly visit', dueDate: '2025-03-01', status: 'pending' },
-      ],
-      notifications: true,
-      lastActive: '2 days ago',
-      verified: true,
-      img: 'https://randomuser.me/api/portraits/men/42.jpg'
-    },
-    { 
-      id: 3, 
-      firstName: 'Rachel', 
-      lastName: 'Goldstein', 
-      relationship: 'Niece',
-      email: 'rachel.g@example.com', 
-      phone: '(555) 456-7890', 
-      address: '321 Maple Ave, Boston, MA 02115',
-      role: 'emergency',
-      tasks: [],
-      notifications: false,
-      lastActive: '3 days ago',
-      verified: false,
-      img: 'https://randomuser.me/api/portraits/women/45.jpg'
-    },
-    { 
-      id: 4, 
-      firstName: 'Michael', 
-      lastName: 'Berkowitz', 
-      relationship: 'Grandson',
-      email: 'michael.b@example.com', 
-      phone: '(555) 567-8901', 
-      address: '654 Cedar Rd, Chicago, IL 60601',
-      role: 'family',
-      tasks: [],
-      notifications: true,
-      lastActive: '1 week ago',
-      verified: true,
-      img: 'https://randomuser.me/api/portraits/men/22.jpg'
-    },
-    { 
-      id: 5, 
-      firstName: 'Rebecca', 
-      lastName: 'Cohen', 
-      relationship: 'Sister-in-law',
-      email: 'rebecca.c@example.com', 
-      phone: '(555) 678-9012', 
-      address: '987 Birch Blvd, Miami, FL 33101',
-      role: 'family',
-      tasks: [],
-      notifications: false,
-      lastActive: '2 weeks ago',
-      verified: false,
-      img: 'https://randomuser.me/api/portraits/women/63.jpg'
-    },
-  ]);
+  // Format family members from context
+  useEffect(() => {
+    if (familyMembers.length > 0) {
+      // Format family members to match component expectations
+      const formattedMembers = familyMembers.map(member => ({
+        id: member.id,
+        firstName: member.name.split(' ')[0],
+        lastName: member.name.split(' ').slice(1).join(' '),
+        relationship: member.relation,
+        email: member.email,
+        phone: member.phone,
+        address: member.address || '',
+        role: member.role === 'primary_caregiver' ? 'caregiver' : 
+              member.role === 'emergency_contact' ? 'emergency' : 'family',
+        tasks: [], // Would need to load from separate task store
+        notifications: true,
+        lastActive: member.lastActive || 'Unknown',
+        verified: member.verified || false,
+        img: member.photoUrl,
+        isPatient: !!member.patientId,
+        patientId: member.patientId,
+        medicalConditions: member.medicalConditions || []
+      }));
+      setFormattedFamilyMembers(formattedMembers);
+    }
+  }, [familyMembers]);
 
-  // Mock care tasks
+  // Get patients not added as family members 
+  useEffect(() => {
+    if (patients.length > 0 && familyMembers.length > 0) {
+      const notMembers = patients.filter(patient => 
+        !familyMembers.some(member => member.patientId === patient.id)
+      );
+      setPatientsNotMembers(notMembers);
+    } else if (patients.length > 0) {
+      setPatientsNotMembers(patients);
+    }
+  }, [patients, familyMembers]);
+
+  // Mock care tasks - would come from API in real app
   const [careTasks, setCareTasks] = useState([
     { 
       id: 1, 
@@ -264,9 +241,13 @@ function FamilyMembersPage() {
       address: '',
       role: 'family',
       relationship: '',
-      notes: ''
+      notes: '',
+      medicalConditions: ''
     });
     setOpenAddMemberDialog(true);
+    // Reset image preview
+    setSelectedImage(null);
+    setImagePreview(null);
   };
 
   const handleAddMemberClose = () => {
@@ -283,7 +264,8 @@ function FamilyMembersPage() {
         address: selectedMember.address,
         role: selectedMember.role,
         relationship: selectedMember.relationship,
-        notes: ''
+        notes: selectedMember.notes || '',
+        medicalConditions: selectedMember.medicalConditions ? selectedMember.medicalConditions.join(', ') : ''
       });
       setOpenEditMemberDialog(true);
       handleMenuClose();
@@ -317,57 +299,155 @@ function FamilyMembersPage() {
   };
 
   // Member Action handlers
-  const handleAddMember = () => {
-    const newMember = {
-      id: familyMembers.length + 1,
-      firstName: memberForm.firstName,
-      lastName: memberForm.lastName,
-      relationship: memberForm.relationship,
-      email: memberForm.email,
-      phone: memberForm.phone,
-      address: memberForm.address,
-      role: memberForm.role,
-      tasks: [],
-      notifications: true,
-      lastActive: 'Just added',
-      verified: false,
-      img: 'https://randomuser.me/api/portraits/lego/1.jpg' // Default image
-    };
-    
-    setFamilyMembers([...familyMembers, newMember]);
-    showSnackbar(`${newMember.firstName} ${newMember.lastName} has been added to family members.`, 'success');
-    handleAddMemberClose();
-  };
-
-  const handleEditMember = () => {
-    if (selectedMember) {
-      const updatedMembers = familyMembers.map(member => 
-        member.id === selectedMember.id
-          ? { 
-              ...member, 
-              firstName: memberForm.firstName,
-              lastName: memberForm.lastName,
-              relationship: memberForm.relationship,
-              email: memberForm.email,
-              phone: memberForm.phone,
-              address: memberForm.address,
-              role: memberForm.role,
-            }
-          : member
-      );
+  // Handle profile image upload
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  
+  const handleImageChange = (event) => {
+    if (event.target.files && event.target.files[0]) {
+      const file = event.target.files[0];
+      setSelectedImage(file);
       
-      setFamilyMembers(updatedMembers);
-      showSnackbar(`${memberForm.firstName} ${memberForm.lastName}'s information has been updated.`, 'success');
-      handleEditMemberClose();
+      // Create preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  // Handle adding a new family member 
+  const handleAddMember = async () => {
+    try {
+      // Parse medical conditions
+      const medicalConditions = memberForm.medicalConditions 
+        ? memberForm.medicalConditions.split(',').map(c => c.trim()).filter(c => c) 
+        : [];
+        
+      // Format data for API
+      const newMemberData = {
+        name: `${memberForm.firstName} ${memberForm.lastName}`,
+        email: memberForm.email,
+        phone: memberForm.phone,
+        address: memberForm.address,
+        role: memberForm.role === 'caregiver' ? 'primary_caregiver' : 
+              memberForm.role === 'emergency' ? 'emergency_contact' : 'family_member',
+        relation: memberForm.relationship,
+        notes: memberForm.notes,
+        medicalConditions: medicalConditions,
+        photoUrl: imagePreview || 'https://randomuser.me/api/portraits/lego/1.jpg'
+      };
+      
+      await addFamilyMember(newMemberData);
+      showSnackbar(`${memberForm.firstName} ${memberForm.lastName} has been added to family members.`, 'success');
+      handleAddMemberClose();
+      
+      // Reset image state
+      setSelectedImage(null);
+      setImagePreview(null);
+    } catch (err) {
+      showSnackbar('Error adding family member', 'error');
+      console.error(err);
     }
   };
 
-  const handleDeleteMember = () => {
+  // Handle editing a family member
+  const handleEditMember = async () => {
     if (selectedMember) {
-      const updatedMembers = familyMembers.filter(member => member.id !== selectedMember.id);
-      setFamilyMembers(updatedMembers);
-      showSnackbar(`${selectedMember.firstName} ${selectedMember.lastName} has been removed from family members.`, 'success');
-      handleDeleteClose();
+      try {
+        // Parse medical conditions
+        const medicalConditions = memberForm.medicalConditions 
+          ? memberForm.medicalConditions.split(',').map(c => c.trim()).filter(c => c) 
+          : [];
+          
+        // Format data for API
+        const updatedMemberData = {
+          name: `${memberForm.firstName} ${memberForm.lastName}`,
+          email: memberForm.email,
+          phone: memberForm.phone,
+          address: memberForm.address,
+          role: memberForm.role === 'caregiver' ? 'primary_caregiver' : 
+                memberForm.role === 'emergency' ? 'emergency_contact' : 'family_member',
+          relation: memberForm.relationship,
+          notes: memberForm.notes,
+          medicalConditions: medicalConditions,
+          photoUrl: imagePreview || selectedMember.img
+        };
+        
+        await updateFamilyMember(selectedMember.id, updatedMemberData);
+        showSnackbar(`${memberForm.firstName} ${memberForm.lastName}'s information has been updated.`, 'success');
+        handleEditMemberClose();
+        
+        // Reset image state
+        setSelectedImage(null);
+        setImagePreview(null);
+      } catch (err) {
+        showSnackbar('Error updating family member', 'error');
+        console.error(err);
+      }
+    }
+  };
+
+  // Handle converting a family member to a patient
+  const handleMakePatient = async () => {
+    if (selectedMember) {
+      try {
+        const patientData = {
+          preferredName: memberForm.firstName,
+          age: parseInt(memberForm.age || '65'),
+          dob: memberForm.dob || '',
+          medicalConditions: memberForm.medicalConditions 
+            ? memberForm.medicalConditions.split(',').map(c => c.trim()) 
+            : [],
+          allergies: memberForm.allergies
+            ? memberForm.allergies.split(',').map(a => a.trim()) 
+            : []
+        };
+        
+        await convertFamilyMemberToPatient(selectedMember.id, patientData);
+        showSnackbar(`${selectedMember.firstName} ${selectedMember.lastName} is now a patient.`, 'success');
+        handleMakePatientClose();
+      } catch (err) {
+        showSnackbar('Error converting family member to patient', 'error');
+        console.error(err);
+      }
+    }
+  };
+  
+  // Open Make Patient dialog
+  const handleMakePatientOpen = () => {
+    if (selectedMember) {
+      setMemberForm({
+        ...memberForm,
+        firstName: selectedMember.firstName,
+        lastName: selectedMember.lastName,
+        age: '65',
+        dob: '',
+        medicalConditions: '',
+        allergies: ''
+      });
+      setOpenMakePatientDialog(true);
+      handleMenuClose();
+    }
+  };
+  
+  // Close Make Patient dialog
+  const handleMakePatientClose = () => {
+    setOpenMakePatientDialog(false);
+  };
+
+  // Handle deleting a family member
+  const handleDeleteMember = async () => {
+    if (selectedMember) {
+      try {
+        await deleteFamilyMember(selectedMember.id);
+        showSnackbar(`${selectedMember.firstName} ${selectedMember.lastName} has been removed from family members.`, 'success');
+        handleDeleteClose();
+      } catch (err) {
+        showSnackbar('Error removing family member', 'error');
+        console.error(err);
+      }
     }
   };
 
@@ -403,9 +483,18 @@ function FamilyMembersPage() {
     setSnackbarOpen(false);
   };
 
+  // Add handlers for adding medical info to family member
+  const handleAddMedicalInfo = (e) => {
+    const { name, value } = e.target;
+    setMemberForm({
+      ...memberForm,
+      [name]: value
+    });
+  };
+
   // Filter and search handlers
   const getFilteredMembers = () => {
-    return familyMembers.filter(member => {
+    return formattedFamilyMembers.filter(member => {
       const matchesSearch = 
         `${member.firstName} ${member.lastName}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
         member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -447,13 +536,15 @@ function FamilyMembersPage() {
           <Typography variant="h4" component="h1" fontWeight="bold">
             Family & Caregivers
           </Typography>
-          <Button
-            variant="contained"
-            startIcon={<PersonAddIcon />}
-            onClick={handleAddMemberOpen}
-          >
-            Add Member
-          </Button>
+          <Box>
+            <Button
+              variant="contained"
+              startIcon={<PersonAddIcon />}
+              onClick={handleAddMemberOpen}
+            >
+              Add Member
+            </Button>
+          </Box>
         </Box>
         
         {/* Search and Filters */}
@@ -577,6 +668,20 @@ function FamilyMembersPage() {
                             <LocationOnIcon fontSize="small" sx={{ mr: 1, mt: 0.25, color: 'text.secondary' }} />
                             <span>{member.address}</span>
                           </Typography>
+                          
+                          {member.medicalConditions && member.medicalConditions.length > 0 && (
+                            <Box sx={{ mt: 2 }}>
+                              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'flex-start', mb: 1 }}>
+                                <MedicalInformationIcon fontSize="small" sx={{ mr: 1, mt: 0.25, color: 'text.secondary' }} />
+                                <span>Medical Conditions:</span>
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, pl: 4 }}>
+                                {member.medicalConditions.map((condition, idx) => (
+                                  <Chip key={idx} label={condition} size="small" color="info" variant="outlined" />
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
                           
                           <Box sx={{ display: 'flex', alignItems: 'center', mt: 2 }}>
                             <NotificationsIcon fontSize="small" sx={{ mr: 1, color: member.notifications ? 'success.main' : 'text.disabled' }} />
@@ -807,6 +912,12 @@ function FamilyMembersPage() {
             </ListItemIcon>
             <ListItemText>View Tasks</ListItemText>
           </MenuItem>
+          <MenuItem onClick={handleMakePatientOpen}>
+            <ListItemIcon>
+              <LocalHospitalIcon fontSize="small" />
+            </ListItemIcon>
+            <ListItemText>Make Patient</ListItemText>
+          </MenuItem>
           <Divider />
           <MenuItem onClick={handleDeleteOpen} sx={{ color: 'error.main' }}>
             <ListItemIcon>
@@ -821,6 +932,41 @@ function FamilyMembersPage() {
           <DialogTitle>Add Family Member</DialogTitle>
           <DialogContent dividers>
             <Grid container spacing={2}>
+              <Grid item xs={12} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={imagePreview || 'https://randomuser.me/api/portraits/lego/1.jpg'}
+                    alt="Profile Preview"
+                    sx={{ width: 100, height: 100, mb: 1 }}
+                  />
+                  <label htmlFor="profile-image-upload">
+                    <Input
+                      accept="image/*"
+                      id="profile-image-upload"
+                      type="file"
+                      sx={{ display: 'none' }}
+                      onChange={handleImageChange}
+                    />
+                    <IconButton 
+                      color="primary" 
+                      aria-label="upload picture" 
+                      component="span"
+                      sx={{ 
+                        position: 'absolute', 
+                        bottom: 0,
+                        right: 0,
+                        bgcolor: 'background.paper'
+                      }}
+                    >
+                      <PhotoCameraIcon />
+                    </IconButton>
+                  </label>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Upload Profile Photo
+                </Typography>
+              </Grid>
+              
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="First Name"
@@ -906,6 +1052,20 @@ function FamilyMembersPage() {
               </Grid>
               <Grid item xs={12}>
                 <TextField
+                  label="Medical Conditions"
+                  name="medicalConditions"
+                  value={memberForm.medicalConditions || ''}
+                  onChange={handleFormChange}
+                  fullWidth
+                  margin="normal"
+                  placeholder="e.g. Diabetes, Hypertension, Asthma (separate with commas)"
+                  InputProps={{
+                    startAdornment: <MedicalInformationIcon color="action" sx={{ mr: 1 }} />
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
                   label="Notes"
                   name="notes"
                   value={memberForm.notes}
@@ -936,6 +1096,41 @@ function FamilyMembersPage() {
           <DialogTitle>Edit Family Member</DialogTitle>
           <DialogContent dividers>
             <Grid container spacing={2}>
+              <Grid item xs={12} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+                <Box sx={{ position: 'relative' }}>
+                  <Avatar
+                    src={imagePreview || (selectedMember?.img || 'https://randomuser.me/api/portraits/lego/1.jpg')}
+                    alt="Profile Preview"
+                    sx={{ width: 100, height: 100, mb: 1 }}
+                  />
+                  <label htmlFor="edit-profile-image">
+                    <Input
+                      accept="image/*"
+                      id="edit-profile-image"
+                      type="file"
+                      sx={{ display: 'none' }}
+                      onChange={handleImageChange}
+                    />
+                    <IconButton 
+                      color="primary" 
+                      aria-label="upload picture" 
+                      component="span"
+                      sx={{ 
+                        position: 'absolute', 
+                        bottom: 0,
+                        right: 0,
+                        bgcolor: 'background.paper'
+                      }}
+                    >
+                      <PhotoCameraIcon />
+                    </IconButton>
+                  </label>
+                </Box>
+                <Typography variant="caption" color="text.secondary">
+                  Update Profile Photo
+                </Typography>
+              </Grid>
+              
               <Grid item xs={12} sm={6}>
                 <TextField
                   label="First Name"
@@ -1021,6 +1216,20 @@ function FamilyMembersPage() {
               </Grid>
               <Grid item xs={12}>
                 <TextField
+                  label="Medical Conditions"
+                  name="medicalConditions"
+                  value={memberForm.medicalConditions || ''}
+                  onChange={handleFormChange}
+                  fullWidth
+                  margin="normal"
+                  placeholder="e.g. Diabetes, Hypertension, Asthma (separate with commas)"
+                  InputProps={{
+                    startAdornment: <MedicalInformationIcon color="action" sx={{ mr: 1 }} />
+                  }}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
                   label="Notes"
                   name="notes"
                   value={memberForm.notes}
@@ -1047,6 +1256,106 @@ function FamilyMembersPage() {
           </DialogActions>
         </Dialog>
         
+        {/* Make Patient Dialog */}
+        <Dialog open={openMakePatientDialog} onClose={handleMakePatientClose} maxWidth="md" fullWidth>
+          <DialogTitle>Make Family Member a Patient</DialogTitle>
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Typography variant="body1" paragraph>
+                  You are about to make <strong>{selectedMember?.firstName} {selectedMember?.lastName}</strong> a patient in the system.
+                  Please provide the following medical information:
+                </Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Preferred Name"
+                  name="firstName"
+                  value={memberForm.firstName}
+                  onChange={handleAddMedicalInfo}
+                  placeholder="What name should we use?"
+                  margin="normal"
+                />
+              </Grid>
+              
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Age"
+                  name="age"
+                  type="number"
+                  value={memberForm.age}
+                  onChange={handleAddMedicalInfo}
+                  margin="normal"
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  fullWidth
+                  label="Date of Birth"
+                  name="dob"
+                  type="date"
+                  value={memberForm.dob}
+                  onChange={handleAddMedicalInfo}
+                  InputLabelProps={{
+                    shrink: true,
+                  }}
+                  margin="normal"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Medical Conditions"
+                  name="medicalConditions"
+                  multiline
+                  rows={2}
+                  value={memberForm.medicalConditions}
+                  onChange={handleAddMedicalInfo}
+                  placeholder="Diabetes, Hypertension, etc. (separate with commas)"
+                  margin="normal"
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Allergies"
+                  name="allergies"
+                  multiline
+                  rows={2}
+                  value={memberForm.allergies}
+                  onChange={handleAddMedicalInfo}
+                  placeholder="Penicillin, Peanuts, etc. (separate with commas)"
+                  margin="normal"
+                />
+              </Grid>
+              
+              <Grid item xs={12}>
+                <Typography variant="body2" color="text.secondary">
+                  This will convert {selectedMember?.firstName} {selectedMember?.lastName} to a patient in the system.
+                  They will still remain as a family member, but will now have a patient profile with medical information,
+                  and can be monitored through in-home cameras.
+                </Typography>
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleMakePatientClose}>Cancel</Button>
+            <Button 
+              variant="contained" 
+              color="primary"
+              onClick={handleMakePatient}
+            >
+              Make Patient
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         {/* Delete Confirmation Dialog */}
         <Dialog open={openDeleteConfirmDialog} onClose={handleDeleteClose}>
           <DialogTitle>Remove Family Member?</DialogTitle>

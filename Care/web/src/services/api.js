@@ -293,23 +293,42 @@ export const patientService = {
       familyMemberId: familyMemberId,
       // Camera access settings
       cameras: patientData.cameras || [
-        { id: 'lf-living-room', name: 'Living Room', streamUrl: 'rtsp://example.com/livingroom', enabled: true },
-        { id: 'lf-bedroom', name: 'Bedroom', streamUrl: 'rtsp://example.com/bedroom', enabled: true },
+        { 
+          id: 'lf-living-room', 
+          name: 'Living Room', 
+          streamUrl: 'rtsp://example.com/livingroom', 
+          enabled: true,
+          wsPort: 9002,
+          streamActive: true
+        },
+        { 
+          id: 'lf-bedroom', 
+          name: 'Bedroom', 
+          streamUrl: 'rtsp://example.com/bedroom', 
+          enabled: true,
+          wsPort: 9003,
+          streamActive: true
+        },
         { 
           id: 'onvif-litokam', 
           name: 'Litokam LF-C1t', 
           type: 'ONVIF Camera',
-          ipAddress: '10.0.0.43',
+          ipAddress: '192.168.1.1',
           username: 'admin',
           onvifPort: '8000',
           rtspPort: '5543',
-          streamUrl: 'rtsp://admin:Delta#1234@10.0.0.43:5543/stream1',
-          onvifUrl: 'http://10.0.0.43:8000/onvif/device_service',
+          streamUrl: 'rtsp://admin:123456@192.168.1.1:5543/stream1',
+          onvifUrl: 'http://192.168.1.1:8000/onvif/device_service',
           status: 'online',
           connection: 'Wired',
           lastSeen: 'Just now',
           enabled: true,
-          motionDetection: true
+          motionDetection: true,
+          model: 'LF-C1t',
+          resolution: '2k+2.4G+BT',
+          ptzSupported: true,
+          wsPort: 9001,
+          streamActive: true // Indicates this camera has an active stream
         }
       ] // Cameras
     };

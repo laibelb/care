@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAppContext } from '../context/AppContext';
+import CameraViewer from '../components/CameraViewer';
 import {
   Container,
   Box,
@@ -27,6 +29,7 @@ import '../styles/ProfilePage.css';
 import CameraAltIcon from '@mui/icons-material/CameraAlt';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveIcon from '@mui/icons-material/Save';
+import VideocamIcon from '@mui/icons-material/Videocam';
 import LocalPhoneIcon from '@mui/icons-material/LocalPhone';
 import EmailIcon from '@mui/icons-material/Email';
 import HomeIcon from '@mui/icons-material/Home';
@@ -39,10 +42,13 @@ import MonitorHeartIcon from '@mui/icons-material/MonitorHeart';
 import WaterDropIcon from '@mui/icons-material/WaterDrop';
 
 function ProfilePage() {
+  // Get context data
+  const { currentUser, patients, selectedPatient, updatePatient } = useAppContext();
+  
   // Tab state
   const [tabValue, setTabValue] = useState(0);
   
-  // Caregiver user data
+  // Caregiver user data (from context)
   const [caregiverData, setCaregiverData] = useState({
     name: 'Ari Berkowitz',
     email: 'ari.berkowitz@example.com',
@@ -52,8 +58,25 @@ function ProfilePage() {
     bio: 'Family coordinator and primary caregiver responsible for managing patient care and coordination.',
     dateJoined: 'January 2023',
     preferredContactMethod: 'email',
-    photoUrl: 'https://randomuser.me/api/portraits/men/64.jpg'
+    photoUrl: '/images/ariB.png'
   });
+  
+  // Set caregiver data from context when available
+  useEffect(() => {
+    if (currentUser) {
+      setCaregiverData({
+        name: currentUser.name,
+        email: currentUser.email,
+        phone: currentUser.phone,
+        role: currentUser.role,
+        address: currentUser.address || '',
+        bio: currentUser.bio || 'Family coordinator and primary caregiver.',
+        dateJoined: currentUser.dateJoined || 'January 2023',
+        preferredContactMethod: currentUser.preferredContactMethod || 'email',
+        photoUrl: currentUser.photoUrl
+      });
+    }
+  }, [currentUser]);
   
   // Patient data
   const [patientData, setPatientData] = useState({
@@ -71,18 +94,57 @@ function ProfilePage() {
     dialysisSchedule: 'Monday, Wednesday, Friday - 9:00 AM',
     dialysisCenter: 'Midtown Dialysis Center • (555) 888-9999',
     nextAppointment: 'March 10, 2025 - Nephrology Follow-up',
-    photoUrl: '/images/rabbiB.png'
+    photoUrl: '/images/rabbiB.png',
+    cameras: [
+      { id: 'lf-living-room', name: 'Living Room', streamUrl: 'rtsp://example.com/livingroom', enabled: true },
+      { id: 'lf-bedroom', name: 'Bedroom', streamUrl: 'rtsp://example.com/bedroom', enabled: true }
+    ] // LittlefSmart cameras
   });
+  
+  // Set patient data from context when available
+  useEffect(() => {
+    if (selectedPatient) {
+      const primaryPhysician = selectedPatient.primaryPhysician 
+        ? `${selectedPatient.primaryPhysician.name} • ${selectedPatient.primaryPhysician.phone}`
+        : '';
+        
+      const emergencyContact = selectedPatient.emergencyContact
+        ? `${selectedPatient.emergencyContact.name} (${selectedPatient.emergencyContact.relationship}) • ${selectedPatient.emergencyContact.phone}`
+        : '';
+        
+      setPatientData({
+        name: selectedPatient.name,
+        dob: selectedPatient.dob || '',
+        age: selectedPatient.age || 0,
+        medicalID: selectedPatient.medicalID || '',
+        primaryPhysician: primaryPhysician,
+        address: selectedPatient.address || '',
+        emergencyContact: emergencyContact,
+        preferredHospital: selectedPatient.preferredHospital || '',
+        medicalConditions: selectedPatient.medicalConditions || [],
+        allergies: selectedPatient.allergies || [],
+        bloodType: selectedPatient.bloodType || '',
+        dialysisSchedule: selectedPatient.dialysisSchedule || '',
+        dialysisCenter: selectedPatient.dialysisCenter || '',
+        nextAppointment: selectedPatient.nextAppointment || '',
+        photoUrl: selectedPatient.photoUrl || '/images/rabbiB.png',
+        cameras: selectedPatient.cameras || []
+      });
+    }
+  }, [selectedPatient]);
 
   // Edit mode states
   const [editMode, setEditMode] = useState(false);
+  const [editPatientMode, setEditPatientMode] = useState(false);
   const [formData, setFormData] = useState(caregiverData);
+  const [patientFormData, setPatientFormData] = useState(patientData);
   const [openSnackbar, setOpenSnackbar] = useState(false);
 
   // Tab change handler
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
     setEditMode(false);
+    setEditPatientMode(false);
   };
 
   // Form handlers
@@ -94,16 +156,46 @@ function ProfilePage() {
     });
   };
 
+  const handlePatientChange = (e) => {
+    const { name, value } = e.target;
+    setPatientFormData({
+      ...patientFormData,
+      [name]: value
+    });
+  };
+  
+  // Handle array fields like allergies and medical conditions
+  const handlePatientArrayChange = (name, value) => {
+    // Convert comma-separated string to array
+    const arrayValue = value.split(',').map(item => item.trim()).filter(item => item);
+    setPatientFormData({
+      ...patientFormData,
+      [name]: arrayValue
+    });
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setCaregiverData(formData);
     setEditMode(false);
     setOpenSnackbar(true);
   };
+  
+  const handlePatientSubmit = (e) => {
+    e.preventDefault();
+    setPatientData(patientFormData);
+    setEditPatientMode(false);
+    setOpenSnackbar(true);
+  };
 
   const handleCancel = () => {
     setFormData(caregiverData);
     setEditMode(false);
+  };
+  
+  const handlePatientCancel = () => {
+    setPatientFormData(patientData);
+    setEditPatientMode(false);
   };
 
   const closeSnackbar = () => {
@@ -351,11 +443,28 @@ function ProfilePage() {
               <Grid item xs={12} md={4}>
                 <Card elevation={2}>
                   <CardContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 4 }}>
-                    <Avatar
-                      src={patientData.photoUrl}
-                      alt={patientData.name}
-                      sx={{ width: 160, height: 160, mb: 2, border: '4px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
-                    />
+                    <Box sx={{ position: 'relative' }}>
+                      <Avatar
+                        src={patientData.photoUrl}
+                        alt={patientData.name}
+                        sx={{ width: 160, height: 160, mb: 2, border: '4px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}
+                      />
+                      <IconButton 
+                        color="primary" 
+                        sx={{ 
+                          position: 'absolute',
+                          bottom: 10,
+                          right: 0,
+                          bgcolor: 'white',
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                          '&:hover': {
+                            bgcolor: 'white',
+                          }
+                        }}
+                      >
+                        <CameraAltIcon />
+                      </IconButton>
+                    </Box>
                     <Typography variant="h5" component="h2" fontWeight="bold">
                       {patientData.name}
                     </Typography>
@@ -365,55 +474,126 @@ function ProfilePage() {
                       icon={<WaterDropIcon />}
                       sx={{ mt: 1, mb: 2 }}
                     />
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
-                        Age:
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {patientData.age}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
-                        DOB:
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {new Date(patientData.dob).toLocaleDateString()}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                      <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
-                        Blood Type:
-                      </Typography>
-                      <Typography variant="body1" fontWeight="medium">
-                        {patientData.bloodType}
-                      </Typography>
-                    </Box>
+                    {!editPatientMode ? (
+                      <>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
+                            Age:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="medium">
+                            {patientData.age}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
+                            DOB:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="medium">
+                            {new Date(patientData.dob).toLocaleDateString()}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <Typography variant="body1" color="text.secondary" sx={{ mr: 1 }}>
+                            Blood Type:
+                          </Typography>
+                          <Typography variant="body1" fontWeight="medium">
+                            {patientData.bloodType}
+                          </Typography>
+                        </Box>
+                      </>
+                    ) : (
+                      <>
+                        <TextField
+                          label="Date of Birth"
+                          name="dob"
+                          type="date"
+                          value={patientFormData.dob}
+                          onChange={handlePatientChange}
+                          sx={{ mt: 2, mb: 1 }}
+                          InputLabelProps={{ shrink: true }}
+                          fullWidth
+                        />
+                        <TextField
+                          label="Blood Type"
+                          name="bloodType"
+                          value={patientFormData.bloodType}
+                          onChange={handlePatientChange}
+                          sx={{ mb: 2 }}
+                          fullWidth
+                        />
+                      </>
+                    )}
                     <Divider sx={{ width: '100%', my: 3 }} />
                     <Box sx={{ width: '100%' }}>
                       <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                         Next Appointment
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <CalendarMonthIcon color="primary" sx={{ mr: 1 }} />
-                        <Typography variant="body2">
-                          {patientData.nextAppointment}
-                        </Typography>
-                      </Box>
+                      {!editPatientMode ? (
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                          <CalendarMonthIcon color="primary" sx={{ mr: 1 }} />
+                          <Typography variant="body2">
+                            {patientData.nextAppointment}
+                          </Typography>
+                        </Box>
+                      ) : (
+                        <TextField
+                          label="Next Appointment"
+                          name="nextAppointment"
+                          value={patientFormData.nextAppointment}
+                          onChange={handlePatientChange}
+                          sx={{ mb: 2 }}
+                          fullWidth
+                        />
+                      )}
                       
                       <Typography variant="subtitle1" fontWeight="medium" gutterBottom>
                         Dialysis Schedule
                       </Typography>
-                      <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
-                        <AccessTimeIcon color="primary" sx={{ mr: 1, mt: 0.5 }} />
-                        <Typography variant="body2">
-                          {patientData.dialysisSchedule}
-                          <br />
-                          <Typography variant="body2" color="text.secondary">
-                            {patientData.dialysisCenter}
+                      {!editPatientMode ? (
+                        <Box sx={{ display: 'flex', alignItems: 'flex-start', mb: 2 }}>
+                          <AccessTimeIcon color="primary" sx={{ mr: 1, mt: 0.5 }} />
+                          <Typography variant="body2">
+                            {patientData.dialysisSchedule}
+                            <br />
+                            <Typography variant="body2" color="text.secondary">
+                              {patientData.dialysisCenter}
+                            </Typography>
                           </Typography>
-                        </Typography>
-                      </Box>
+                        </Box>
+                      ) : (
+                        <>
+                          <TextField
+                            label="Dialysis Schedule"
+                            name="dialysisSchedule"
+                            value={patientFormData.dialysisSchedule}
+                            onChange={handlePatientChange}
+                            sx={{ mb: 2 }}
+                            fullWidth
+                            placeholder="e.g. Monday, Wednesday, Friday - 9:00 AM"
+                          />
+                          <TextField
+                            label="Dialysis Center"
+                            name="dialysisCenter"
+                            value={patientFormData.dialysisCenter}
+                            onChange={handlePatientChange}
+                            sx={{ mb: 2 }}
+                            fullWidth
+                          />
+                        </>
+                      )}
+                      
+                      {editPatientMode && (
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          startIcon={<SaveIcon />}
+                          onClick={handlePatientSubmit}
+                          fullWidth
+                          sx={{ mt: 2 }}
+                        >
+                          Save Patient Info
+                        </Button>
+                      )}
                     </Box>
                   </CardContent>
                 </Card>
@@ -425,91 +605,272 @@ function ProfilePage() {
                   {/* Medical Conditions */}
                   <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 3 }}>
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
-                        Medical Conditions
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {patientData.medicalConditions.map((condition, index) => (
-                          <Chip 
-                            key={index} 
-                            label={condition} 
-                            color="error"
-                            icon={<MonitorHeartIcon />}
-                            sx={{ mb: 1 }}
-                          />
-                        ))}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          Medical Conditions
+                        </Typography>
+                        {!editPatientMode && (
+                          <Button 
+                            startIcon={<EditIcon />} 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => setEditPatientMode(true)}
+                          >
+                            Edit
+                          </Button>
+                        )}
                       </Box>
+                      
+                      {!editPatientMode ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {patientData.medicalConditions.map((condition, index) => (
+                            <Chip 
+                              key={index} 
+                              label={condition} 
+                              color="error"
+                              icon={<MonitorHeartIcon />}
+                              sx={{ mb: 1 }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Medical Conditions"
+                          placeholder="Enter conditions separated by commas (e.g. Kidney Disease, Diabetes)"
+                          value={patientFormData.medicalConditions.join(', ')}
+                          onChange={(e) => handlePatientArrayChange('medicalConditions', e.target.value)}
+                          multiline
+                          rows={2}
+                        />
+                      )}
                     </Paper>
                   </Grid>
                   
                   {/* Allergies */}
                   <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 3 }}>
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
-                        Allergies
-                      </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                        {patientData.allergies.map((allergy, index) => (
-                          <Chip 
-                            key={index} 
-                            label={allergy} 
-                            color="warning"
-                            sx={{ mb: 1 }}
-                          />
-                        ))}
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          Allergies
+                        </Typography>
+                        {!editPatientMode && (
+                          <Button 
+                            startIcon={<EditIcon />} 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => setEditPatientMode(true)}
+                          >
+                            Edit
+                          </Button>
+                        )}
                       </Box>
+                      
+                      {!editPatientMode ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {patientData.allergies.map((allergy, index) => (
+                            <Chip 
+                              key={index} 
+                              label={allergy} 
+                              color="warning"
+                              sx={{ mb: 1 }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Allergies"
+                          placeholder="Enter allergies separated by commas (e.g. Penicillin, Sulfa Drugs)"
+                          value={patientFormData.allergies.join(', ')}
+                          onChange={(e) => handlePatientArrayChange('allergies', e.target.value)}
+                          multiline
+                          rows={2}
+                        />
+                      )}
                     </Paper>
                   </Grid>
                   
                   {/* Primary Care Provider */}
                   <Grid item xs={12} sm={6}>
                     <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
-                        Primary Physician
-                      </Typography>
-                      <Typography variant="body1" paragraph>
-                        {patientData.primaryPhysician}
-                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          Primary Physician
+                        </Typography>
+                        {!editPatientMode && (
+                          <Button 
+                            startIcon={<EditIcon />} 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => setEditPatientMode(true)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </Box>
                       
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
+                      {!editPatientMode ? (
+                        <Typography variant="body1" paragraph>
+                          {patientData.primaryPhysician}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Primary Physician"
+                          name="primaryPhysician"
+                          value={patientFormData.primaryPhysician}
+                          onChange={handlePatientChange}
+                          margin="normal"
+                        />
+                      )}
+                      
+                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2, mt: 3 }}>
                         Preferred Hospital
                       </Typography>
-                      <Typography variant="body1">
-                        {patientData.preferredHospital}
-                      </Typography>
+                      
+                      {!editPatientMode ? (
+                        <Typography variant="body1">
+                          {patientData.preferredHospital}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Preferred Hospital"
+                          name="preferredHospital"
+                          value={patientFormData.preferredHospital}
+                          onChange={handlePatientChange}
+                          margin="normal"
+                        />
+                      )}
                     </Paper>
                   </Grid>
                   
                   {/* Emergency Contact */}
                   <Grid item xs={12} sm={6}>
                     <Paper elevation={2} sx={{ p: 3, height: '100%' }}>
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
-                        Emergency Contact
-                      </Typography>
-                      <Typography variant="body1" paragraph>
-                        {patientData.emergencyContact}
-                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          Emergency Contact
+                        </Typography>
+                        {!editPatientMode && (
+                          <Button 
+                            startIcon={<EditIcon />} 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => setEditPatientMode(true)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </Box>
                       
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
+                      {!editPatientMode ? (
+                        <Typography variant="body1" paragraph>
+                          {patientData.emergencyContact}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Emergency Contact"
+                          name="emergencyContact"
+                          value={patientFormData.emergencyContact}
+                          onChange={handlePatientChange}
+                          margin="normal"
+                        />
+                      )}
+                      
+                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2, mt: 3 }}>
                         Medical ID
                       </Typography>
-                      <Typography variant="body1">
-                        {patientData.medicalID}
-                      </Typography>
+                      
+                      {!editPatientMode ? (
+                        <Typography variant="body1">
+                          {patientData.medicalID}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Medical ID"
+                          name="medicalID"
+                          value={patientFormData.medicalID}
+                          onChange={handlePatientChange}
+                          margin="normal"
+                        />
+                      )}
+                    </Paper>
+                  </Grid>
+                  
+                  {/* Remote Monitoring - Camera Access */}
+                  <Grid item xs={12}>
+                    <Paper elevation={2} sx={{ p: 3 }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          <VideocamIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                          Remote Monitoring
+                        </Typography>
+                      </Box>
+                      <CameraViewer patient={selectedPatient} />
                     </Paper>
                   </Grid>
                   
                   {/* Address */}
                   <Grid item xs={12}>
                     <Paper elevation={2} sx={{ p: 3 }}>
-                      <Typography variant="h6" component="h3" fontWeight="bold" sx={{ mb: 2 }}>
-                        Home Address
-                      </Typography>
-                      <Typography variant="body1">
-                        {patientData.address}
-                      </Typography>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                        <Typography variant="h6" component="h3" fontWeight="bold">
+                          Home Address
+                        </Typography>
+                        {!editPatientMode && (
+                          <Button 
+                            startIcon={<EditIcon />} 
+                            variant="outlined" 
+                            size="small"
+                            onClick={() => setEditPatientMode(true)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </Box>
+                      
+                      {!editPatientMode ? (
+                        <Typography variant="body1">
+                          {patientData.address}
+                        </Typography>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label="Home Address"
+                          name="address"
+                          value={patientFormData.address}
+                          onChange={handlePatientChange}
+                          margin="normal"
+                        />
+                      )}
                     </Paper>
                   </Grid>
+                  
+                  {/* Save/Cancel buttons for patient edit mode */}
+                  {editPatientMode && (
+                    <Grid item xs={12}>
+                      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+                        <Button 
+                          variant="outlined" 
+                          onClick={handlePatientCancel}
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          variant="contained" 
+                          color="primary" 
+                          startIcon={<SaveIcon />}
+                          onClick={handlePatientSubmit}
+                        >
+                          Save Changes
+                        </Button>
+                      </Box>
+                    </Grid>
+                  )}
                 </Grid>
               </Grid>
             </Grid>
