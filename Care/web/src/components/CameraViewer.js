@@ -266,6 +266,7 @@ function CameraViewer({ patient }) {
                     <MenuItem key={camera.id} value={camera.id}>
                       {camera.name} 
                       {camera.id.startsWith('lf-') && ' (LittlefSmart)'}
+                      {camera.id.startsWith('onvif-') && ' (ONVIF)'}
                     </MenuItem>
                   ))}
                 </Select>
@@ -320,6 +321,52 @@ function CameraViewer({ patient }) {
                     >
                       <Typography variant="caption">LittlefSmart • LIVE</Typography>
                       <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f44336', ml: 0.5 }} />
+                    </Box>
+                  </Box>
+                ) : selectedCamera.id.startsWith('onvif-') ? (
+                  <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <Box 
+                      component="img"
+                      src="/images/camera-feed-living-room.jpg"
+                      alt={`${selectedCamera.name} feed`}
+                      sx={{ 
+                        width: '100%', 
+                        height: '100%', 
+                        objectFit: 'cover',
+                      }}
+                    />
+                    <Box 
+                      sx={{ 
+                        position: 'absolute', 
+                        top: 10,
+                        left: 10,
+                        bgcolor: 'rgba(0,0,0,0.6)',
+                        color: 'white',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5
+                      }}
+                    >
+                      <Typography variant="caption">ONVIF • {selectedCamera.name} • LIVE</Typography>
+                      <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f44336', ml: 0.5 }} />
+                    </Box>
+                    <Box 
+                      sx={{ 
+                        position: 'absolute', 
+                        bottom: 10,
+                        left: 10,
+                        bgcolor: 'rgba(0,0,0,0.6)',
+                        color: 'white',
+                        px: 1,
+                        py: 0.5,
+                        borderRadius: 1,
+                        fontSize: '0.75rem'
+                      }}
+                    >
+                      IP: {selectedCamera.ipAddress} • Port: {selectedCamera.rtspPort}
                     </Box>
                   </Box>
                 ) : (
@@ -451,6 +498,52 @@ function CameraViewer({ patient }) {
                   <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f44336', ml: 0.5 }} />
                 </Box>
               </Box>
+            ) : selectedCamera?.id.startsWith('onvif-') ? (
+              <Box sx={{ width: '100%', height: '100%', position: 'relative' }}>
+                <Box 
+                  component="img"
+                  src="/images/camera-feed-living-room.jpg"
+                  alt={`${selectedCamera.name} feed`}
+                  sx={{ 
+                    width: '100%', 
+                    height: '100%', 
+                    objectFit: 'cover',
+                  }}
+                />
+                <Box 
+                  sx={{ 
+                    position: 'absolute', 
+                    top: 10,
+                    left: 10,
+                    bgcolor: 'rgba(0,0,0,0.6)',
+                    color: 'white',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 0.5
+                  }}
+                >
+                  <Typography variant="caption">ONVIF • {selectedCamera.name} • LIVE</Typography>
+                  <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#f44336', ml: 0.5 }} />
+                </Box>
+                <Box 
+                  sx={{ 
+                    position: 'absolute', 
+                    bottom: 10,
+                    left: 10,
+                    bgcolor: 'rgba(0,0,0,0.6)',
+                    color: 'white',
+                    px: 1,
+                    py: 0.5,
+                    borderRadius: 1,
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  IP: {selectedCamera.ipAddress} • Port: {selectedCamera.rtspPort}
+                </Box>
+              </Box>
             ) : (
               <Typography variant="h6" sx={{ color: 'white' }}>
                 {selectedCamera?.name} Camera Feed (Fullscreen)
@@ -555,13 +648,41 @@ function CameraViewer({ patient }) {
                 </Paper>
               ))}
               
-              {cameras.filter(c => !c.id.startsWith('lf-')).length > 0 && (
+              {cameras.filter(c => c.id.startsWith('onvif-')).length > 0 && (
+                <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
+                  ONVIF Cameras
+                </Typography>
+              )}
+              
+              {cameras.filter(c => c.id.startsWith('onvif-')).map(camera => (
+                <Paper key={camera.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <Box>
+                    <Typography variant="body1">{camera.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      IP: {camera.ipAddress} • ONVIF Port: {camera.onvifPort} • RTSP Port: {camera.rtspPort}
+                    </Typography>
+                  </Box>
+                  <Box>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={camera.enabled}
+                          onChange={(e) => handleToggleCamera(camera.id, e.target.checked)}
+                        />
+                      }
+                      label={camera.enabled ? "Enabled" : "Disabled"}
+                    />
+                  </Box>
+                </Paper>
+              ))}
+              
+              {cameras.filter(c => !c.id.startsWith('lf-') && !c.id.startsWith('onvif-')).length > 0 && (
                 <Typography variant="subtitle2" color="text.secondary" sx={{ mt: 2, mb: 1 }}>
                   Other Cameras
                 </Typography>
               )}
               
-              {cameras.filter(c => !c.id.startsWith('lf-')).map(camera => (
+              {cameras.filter(c => !c.id.startsWith('lf-') && !c.id.startsWith('onvif-')).map(camera => (
                 <Paper key={camera.id} sx={{ p: 2, mb: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <Box>
                     <Typography variant="body1">{camera.name}</Typography>
